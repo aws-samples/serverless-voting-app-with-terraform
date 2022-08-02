@@ -20,10 +20,14 @@
 					{
 						label: 'Votes',
 						data: chartValues,
-						backgroundColor: 'rgb(255, 99, 132, 0.2)',
-						borderColor: 'rgb(255, 99, 132)',
+						backgroundColor: [
+							'rgb(255, 99, 132, 0.5)',
+							'rgba(255, 159, 64, 0.5)',
+							'rgba(75, 192, 192, 0.5)'
+						],
+						borderColor: ['rgb(255, 99, 132)', 'rgba(255, 159, 64)', 'rgba(75, 192, 192)'],
 						borderWidth: 1,
-						barPercentage: 0.6
+						barPercentage: 0.5
 					}
 				]
 			},
