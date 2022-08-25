@@ -1,6 +1,7 @@
 <script>
 	import Vote from '$lib/components/Vote.svelte';
 	import Chart from '$lib/components/Chart.svelte';
+	import Option from '$lib/components/Option.svelte';
 
 	import { pets } from '$lib/stores/pets.js';
 
@@ -11,9 +12,12 @@
 	<title>Serverless Polling App</title>
 </svelte:head>
 
-<div class="flex flex-col md:flex-row basic-2 my-4 justify-between items-end">
-	<h1 class="text-3xl font-bold">What is your favorite pet?</h1>
-	<p class="px-2">Total votes: {total_votes}</p>
+<div class="navbar bg-base-100 ">
+	<div class="flex-1">
+		<div class="normal-case text-4xl my-6 font-bold">What is your favorite pet?</div>
+	</div>
+	<p class="px-2 text-xl font-bold">Total votes: {total_votes}</p>
+	<Option />
 </div>
 
 <div class="flex flex-col md:flex-row">
