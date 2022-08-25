@@ -12,7 +12,7 @@
 </script>
 
 <div class="card card-compact w-auto bg-base-100 shadow-xl m-2">
-	<figure><img src={vote.img_url} alt={vote.id} width="432" height="287"/></figure>
+	<figure><img src={vote.img_url} alt={vote.id} width="432" height="288"/></figure>
 	<div class="card-body">
 		<div class="card-actions justify-between items-center">
 			<h2 class="card-title">Votes: {value}</h2>
