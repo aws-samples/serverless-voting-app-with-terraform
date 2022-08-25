@@ -4,7 +4,7 @@
 
 	export let data;
 
-	let chartLabels = data.map((v) => v.name);
+	let chartLabels = data.map((v) => v.id);
 	let chartValues = data.map((v) => v.votes);
 	let ctx;
 	let chartCanvas;
