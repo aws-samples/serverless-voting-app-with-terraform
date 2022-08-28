@@ -51,11 +51,10 @@ app.post('/votes', async (req, res) => {
             PK: vote.id,
             SK: "total",
         },
-        UpdateExpression: `SET votes = if_not_exists(votes, :default_votes) + :value, img_url = if_not_exists(img_url, :default_url)`,
+        UpdateExpression: `SET votes = if_not_exists(votes, :default_votes) + :value`,
         ExpressionAttributeValues: {
             ":default_votes": 0,
             ":value": 1,
-            ":default_url": vote.img_url
         },
     })
     res.send(results)

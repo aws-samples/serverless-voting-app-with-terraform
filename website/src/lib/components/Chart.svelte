@@ -18,7 +18,6 @@
 				labels: chartLabels,
 				datasets: [
 					{
-						label: 'Votes',
 						data: chartValues,
 						backgroundColor: [
 							'rgb(255, 99, 132, 0.5)',
@@ -32,9 +31,14 @@
 				]
 			},
 			options: {
-				animation: false,
+				animation: true,
 				maintainAspectRatio: false,
-				indexAxis: 'x'
+				indexAxis: 'x',
+				plugins:{
+					legend: {
+						display: false
+					}
+				}
 			}
 		});
 	});

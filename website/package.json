@@ -11,6 +11,11 @@
 		"format": "prettier --write --plugin-search-dir=. ."
 	},
 	"devDependencies": {
+		"@aws-crypto/sha256-js": "2.0.1",
+		"@aws-sdk/client-cognito-identity": "3.157.0",
+		"@aws-sdk/protocol-http": "3.159.0",
+		"@aws-sdk/signature-v4": "3.159.0",
+		"@aws-sdk/util-format-url": "3.159.0",
 		"@sveltejs/adapter-auto": "next",
 		"@sveltejs/adapter-static": "1.0.0-next.38",
 		"@sveltejs/kit": "next",
@@ -21,6 +26,7 @@
 		"eslint": "^8.21.0",
 		"eslint-config-prettier": "^8.5.0",
 		"eslint-plugin-svelte3": "^4.0.0",
+		"mqtt": "4.3.7",
 		"postcss": "^8.4.14",
 		"postcss-load-config": "^4.0.1",
 		"prettier": "^2.7.1",

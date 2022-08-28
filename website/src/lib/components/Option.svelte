@@ -1,5 +1,5 @@
 <script>
-	import { options, load_votes } from '$lib/stores/pets.js';
+	import { options, load_data } from '$lib/stores/votes.js';
 	
 </script>
 
@@ -25,9 +25,9 @@
 		<label class="form-control modal-box" for="">
 			<label for="option-modal" class="btn btn-sm btn-circle absolute right-2 top-2">✕</label>
 			<h2 class="font-bold text-2xl">Config Options</h2>
-			<label class="label" for="apigw">
+			<div class="label">
 				<span class="label-text font-bold text-xl">API Gateway Endpoint</span>
-			</label>
+			</div>
 			<input
 				type="text"
 				name="apigw"
@@ -35,9 +35,9 @@
 				placeholder="Type here"
 				class="input input-bordered w-full"
 			/>
-			<label class="label" for="iotcore">
+			<div class="label">
 				<span class="label-text font-bold text-xl">IoT Core Endpoint</span>
-			</label>
+			</div>
 			<input
 				type="text"
 				name="iotcore"
@@ -45,8 +45,18 @@
 				placeholder="Type here"
 				class="input input-bordered w-full"
 			/>
+			<div class="label">
+				<span class="label-text font-bold text-xl">Cognito Identity Pool ID</span>
+			</div>
+			<input
+				type="text"
+				name="iotcore"
+				bind:value={$options.cognito_identity_pool_id}
+				placeholder="Type here"
+				class="input input-bordered w-full"
+			/>
 			<div class="modal-action">
-				<label for="option-modal" class="btn" on:click={() => load_votes()}>Save</label>
+				<label for="option-modal" class="btn" on:click={() => load_data()}>Save</label>
 			</div>
 		</label>
 	</label>

@@ -16,4 +16,4 @@ applications:
       cache:
         paths:
           - node_modules/**/*
-    appRoot: website/app
+    appRoot: website
