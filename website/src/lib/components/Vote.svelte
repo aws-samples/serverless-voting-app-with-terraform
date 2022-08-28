@@ -2,7 +2,7 @@
 	export let vote;
 	export let value;
 
-	import { save_vote, load_votes } from '$lib/stores/pets.js';
+	import { save_vote } from '$lib/stores/votes.js';
 
 	async function count_vote() {
 		value += 1;

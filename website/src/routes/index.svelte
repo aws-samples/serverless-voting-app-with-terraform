@@ -3,7 +3,8 @@
 	import Chart from '$lib/components/Chart.svelte';
 	import Option from '$lib/components/Option.svelte';
 
-	import { pets } from '$lib/stores/pets.js';
+	import { pets } from '$lib/stores/votes.js';
+
 
 	$: total_votes = $pets.map((pet) => pet.votes).reduce((total, next) => total + next, 0);
 </script>

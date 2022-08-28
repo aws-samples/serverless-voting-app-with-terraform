@@ -1,10 +1,14 @@
 data "aws_region" "current" {}
+data "aws_caller_identity" "current" {}
+data "aws_iot_endpoint" "current" {
+  endpoint_type = "iot:Data-ATS"
+}
 
-module "lambda_function" {
+module "voting-service" {
   source = "terraform-aws-modules/lambda/aws"
 
-  function_name   = "voting-api"
-  description     = "voting api"
+  function_name   = "voting-service"
+  description     = "voting service"
   handler         = "run.sh"
   runtime         = "nodejs14.x"
   memory_size     = 256
@@ -12,7 +16,7 @@ module "lambda_function" {
   build_in_docker = true
 
   source_path = {
-    path     = "src/voting-api",
+    path     = "src/voting-service",
     patterns = []
   }
 
@@ -63,8 +67,8 @@ module "alias_live" {
 
   name = "live"
 
-  function_name    = module.lambda_function.lambda_function_name
-  function_version = module.lambda_function.lambda_function_version
+  function_name    = module.voting-service.lambda_function_name
+  function_version = module.voting-service.lambda_function_version
 
   allowed_triggers = {
     APIGatewayAny = {
@@ -119,9 +123,177 @@ resource "aws_dynamodb_table" "votes_table" {
     type = "S"
   }
 
+  stream_enabled   = true
+  stream_view_type = "NEW_IMAGE"
 
   tags = {
     Terraform   = "true"
     Environment = "dev"
+  }
+}
+
+module "update-service" {
+  source = "terraform-aws-modules/lambda/aws"
+
+  function_name   = "update-service"
+  description     = "realtime update function"
+  handler         = "index.handler"
+  runtime         = "nodejs14.x"
+  memory_size     = 256
+  publish         = true
+  build_in_docker = true
+
+  source_path = {
+    path     = "src/update-service",
+    patterns = []
+  }
+
+  environment_variables = {
+    IOT_ENDPOINT = data.aws_iot_endpoint.current.endpoint_address
+  }
+
+  event_source_mapping = {
+    dynamodb = {
+      event_source_arn  = aws_dynamodb_table.votes_table.stream_arn
+      starting_position = "LATEST"
+    }
+  }
+
+  allowed_triggers = {
+    dynamodb = {
+      principal  = "dynamodb.amazonaws.com"
+      source_arn = aws_dynamodb_table.votes_table.stream_arn
+    }
+  }
+
+  tracing_mode          = "Active"
+  attach_tracing_policy = true
+
+  attach_policies    = true
+  number_of_policies = 1
+
+  policies = [
+    "arn:aws:iam::aws:policy/service-role/AWSLambdaDynamoDBExecutionRole",
+  ]
+
+  attach_policy_statements = true
+  policy_statements = {
+    iotcore = {
+      effect = "Allow",
+      actions = [
+        "iot:Publish",
+      ],
+      resources = ["arn:aws:iot:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:topic/votes"]
+    }
+  }
+
+  tags = {
+    Terraform   = "true"
+    Environment = "dev"
+  }
+
+}
+
+resource "aws_cognito_identity_pool" "main" {
+  identity_pool_name               = "serverless_voting_app_pool"
+  allow_unauthenticated_identities = true
+
+  tags = {
+    Terraform   = "true"
+    Environment = "dev"
+  }
+}
+
+resource "aws_iam_role" "unauthenticated" {
+  name = "cognito_serverless_voting_app_poolUnauth_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+        {
+          "Effect": "Allow",
+          "Principal": {
+              "Federated": "cognito-identity.amazonaws.com"
+          },
+          "Action": "sts:AssumeRoleWithWebIdentity",
+          "Condition": {
+              "StringEquals": {
+                  "cognito-identity.amazonaws.com:aud": "${aws_cognito_identity_pool.main.id}"
+              },
+              "ForAnyValue:StringLike": {
+                  "cognito-identity.amazonaws.com:amr": "unauthenticated"
+              }
+          }
+        }
+    ]
+  })
+
+  inline_policy {
+    name = "cognito_iot_unauthenticated_allow_subscribe_policy"
+
+    policy = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Action   = ["iot:Connect"]
+          Effect   = "Allow"
+          Resource = ["arn:aws:iot:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:client/*"]
+        },
+        {
+          Action   = ["iot:Receive"]
+          Effect   = "Allow"
+          Resource = ["arn:aws:iot:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:topic/votes"]
+        },
+        {
+          Action   = ["iot:Subscribe"]
+          Effect   = "Allow"
+          Resource = ["arn:aws:iot:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:topicfilter/votes"]
+        },
+      ]
+    })
+  }
+
+  tags = {
+    Terraform   = "true"
+    Environment = "dev"
+  }
+}
+
+resource "aws_iam_role" "authenticated" {
+  name = "cognito_serverless_voting_app_poolAuth_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+        {
+          "Effect": "Allow",
+          "Principal": {
+              "Federated": "cognito-identity.amazonaws.com"
+          },
+          "Action": "sts:AssumeRoleWithWebIdentity",
+          "Condition": {
+              "StringEquals": {
+                  "cognito-identity.amazonaws.com:aud": "${aws_cognito_identity_pool.main.id}"
+              },
+              "ForAnyValue:StringLike": {
+                  "cognito-identity.amazonaws.com:amr": "authenticated"
+              }
+          }
+        }
+    ]
+  })
+
+  tags = {
+    Terraform   = "true"
+    Environment = "dev"
+  }
+}
+
+resource "aws_cognito_identity_pool_roles_attachment" "main" {
+  identity_pool_id = aws_cognito_identity_pool.main.id
+
+  roles = {
+    "unauthenticated" = aws_iam_role.unauthenticated.arn
+    "authenticated" = aws_iam_role.authenticated.arn
   }
 }
