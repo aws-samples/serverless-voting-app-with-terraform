@@ -26,7 +26,7 @@
 			<label for="option-modal" class="btn btn-sm btn-circle absolute right-2 top-2">✕</label>
 			<h2 class="font-bold text-2xl">Config Options</h2>
 			<div class="label">
-				<span class="label-text font-bold text-xl">API Gateway Endpoint</span>
+				<span class="label-text font-bold text-xl">API Gateway Endpoint (without trailing slash '/')</span>
 			</div>
 			<input
 				type="text"
