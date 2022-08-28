@@ -1,5 +1,5 @@
 {
-  "name": "realtime-update-service",
+  "name": "update-service",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",

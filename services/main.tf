@@ -123,6 +123,10 @@ resource "aws_dynamodb_table" "votes_table" {
     type = "S"
   }
 
+  provisioner "local-exec" {
+    command = "cd scripts && bash load_init_data.sh"
+  }
+
   stream_enabled   = true
   stream_view_type = "NEW_IMAGE"
 
@@ -296,4 +300,16 @@ resource "aws_cognito_identity_pool_roles_attachment" "main" {
     "unauthenticated" = aws_iam_role.unauthenticated.arn
     "authenticated" = aws_iam_role.authenticated.arn
   }
+}
+
+output "apigw_endpoint" {
+  value = module.api_gateway.apigatewayv2_api_api_endpoint
+}
+
+output "iotcore_endpoint" {
+  value = data.aws_iot_endpoint.current.endpoint_address
+}
+
+output "cognito_identity_pool_id" {
+  value = aws_cognito_identity_pool.main.id
 }

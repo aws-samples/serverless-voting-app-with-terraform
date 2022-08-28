@@ -5,8 +5,6 @@ import { getIoTClient } from '$lib/aws-iot/client';
 
 let iot_client;
 
-const IOT_TOPIC = 'votes';
-
 export const pets = writable([
 	{ id: 'dog', votes: 0, img_url: 'images/dog.jpg', order: 1 },
 	{ id: 'cat', votes: 0, img_url: 'images/cat.jpg', order: 2 },
@@ -39,8 +37,8 @@ export async function load_data() {
 
 	// load current votes from api gateway
 	if (options && options.apigw_endpoint) {
-		console.log(`load votes from voting-service: ${options.apigw_endpoint}${IOT_TOPIC}`);
-		const res = await fetch(`${options.apigw_endpoint}${IOT_TOPIC}`);
+		console.log(`load votes from voting-service: ${options.apigw_endpoint}$/votes`);
+		const res = await fetch(`${options.apigw_endpoint}/votes`);
 		console.log(res);
 		if (res.ok) {
 			const data = await res.json();
@@ -66,7 +64,7 @@ export async function load_data() {
 		iot_client = await getIoTClient(options.iotcore_endpoint, aws_region, creds);
 
 		iot_client.on('connect', function () {
-			iot_client.subscribe(IOT_TOPIC, function (err) {
+			iot_client.subscribe('votes', function (err) {
 				if (!err) {
 					console.log(
 						`subscribed to 'votes' topic at IoT endpoint '${options.iotcore_endpoint}' with Cognito Identiy Pool ID '${options.cognito_identity_pool_id}' `
@@ -104,7 +102,7 @@ export async function save_vote(vote) {
 	if (options && options.apigw_endpoint) {
 		console.log(`send vote to voting-api: ${JSON.stringify(vote)}`);
 
-		const res = await fetch(`${options.apigw_endpoint}${IOT_TOPIC}`, {
+		const res = await fetch(`${options.apigw_endpoint}/votes`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'

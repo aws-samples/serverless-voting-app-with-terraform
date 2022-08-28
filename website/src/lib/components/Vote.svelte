@@ -7,7 +7,7 @@
 	async function count_vote() {
 		value += 1;
 		const res = await save_vote(vote)
-		console.log(`save_vote result: ${JSON.stringify(res)}`)
+		// console.log(`save_vote result: ${JSON.stringify(res)}`)
 	}
 </script>
 

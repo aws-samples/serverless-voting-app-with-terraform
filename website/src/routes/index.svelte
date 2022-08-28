@@ -10,7 +10,7 @@
 </script>
 
 <svelte:head>
-	<title>Serverless Polling App</title>
+	<title>Serverless Voting App</title>
 </svelte:head>
 
 <div class="navbar bg-base-100 ">
