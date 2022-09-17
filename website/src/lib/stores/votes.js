@@ -11,11 +11,13 @@ const petConfigs = {
 	bird: { img_url: 'images/bird.jpg', order: 3 }
 };
 
-export const pets = writable([
+const defaultPets = [
 	{ id: 'dog', votes: 0, ...petConfigs['dog'] },
 	{ id: 'cat', votes: 0, ...petConfigs['cat'] },
 	{ id: 'bird', votes: 0, ...petConfigs['bird'] }
-]);
+]
+
+export const pets = writable(defaultPets);
 
 export const options = writable((browser && JSON.parse(localStorage.getItem('options'))) || {});
 
@@ -48,13 +50,26 @@ export async function load_data() {
 		console.log(res);
 		if (res.ok) {
 			const data = await res.json();
-			const votes = data
-				.map((vote) => {
-					return { id: vote.PK, votes: vote.votes, ...petConfigs[vote.PK] };
+			if (data.length < 3) {
+				const votes = defaultPets.map(pet => {
+					let votes = pet.votes;
+					const filter_result = data.filter(vote => vote.PK == pet.id);
+					if (filter_result.length > 0) {
+						votes = filter_result[0].votes
+					}
+					return { id: pet.id, votes: votes, ...petConfigs[pet.id] };
 				})
-				.sort((a, b) => a.order - b.order);
-			console.log(`votes=${JSON.stringify(votes)}`);
-			pets.set(votes);
+				console.log(`votes=${JSON.stringify(votes)}`);
+				pets.set(votes);
+			} else {
+				const votes = data
+					.map(vote => {
+						return { id: vote.PK, votes: vote.votes, ...petConfigs[vote.PK] };
+					})
+					.sort((a, b) => a.order - b.order);
+				console.log(`votes=${JSON.stringify(votes)}`);
+				pets.set(votes);
+			}
 		} else {
 			console.error(`failed to fetch votes from api: ${options.apigw_endpoint}`);
 		}

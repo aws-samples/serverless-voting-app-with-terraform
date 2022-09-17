@@ -18,9 +18,7 @@ module "get-votes" {
   memory_size     = 256
   build_in_docker = true
 
-  source_path = {
-    path = "src/get-votes",
-  }
+  source_path = "src/get-votes"
 
   environment_variables = {
     DDB_TABLE_NAME = aws_dynamodb_table.votes_table.id
@@ -34,6 +32,14 @@ module "get-votes" {
         "dynamodb:Scan",
       ],
       resources = [aws_dynamodb_table.votes_table.arn]
+    }
+  }
+
+  create_current_version_allowed_triggers = false
+  allowed_triggers = {
+    APIGatewayAny = {
+      service    = "apigateway"
+      source_arn = "${module.api_gateway.apigatewayv2_api_execution_arn}/*/*"
     }
   }
 
@@ -54,9 +60,7 @@ module "post-votes" {
   memory_size     = 256
   build_in_docker = true
 
-  source_path = {
-    path = "src/post-votes",
-  }
+  source_path = "src/post-votes"
 
   environment_variables = {
     DDB_TABLE_NAME = aws_dynamodb_table.votes_table.id
@@ -72,6 +76,14 @@ module "post-votes" {
         "dynamodb:ConditionCheckItem",
       ],
       resources = [aws_dynamodb_table.votes_table.arn]
+    }
+  }
+
+  create_current_version_allowed_triggers = false
+  allowed_triggers = {
+    APIGatewayAny = {
+      service    = "apigateway"
+      source_arn = "${module.api_gateway.apigatewayv2_api_execution_arn}/*/*"
     }
   }
 
@@ -176,9 +188,7 @@ module "count-votes" {
   publish         = true
   build_in_docker = true
 
-  source_path = {
-    path     = "src/count-votes",
-  }
+  source_path = "src/count-votes"
 
   environment_variables = {
     QUEUE_URL = module.votes_queue.sqs_queue_id
@@ -238,9 +248,7 @@ module "realtime-update" {
   publish         = true
   build_in_docker = true
 
-  source_path = {
-    path     = "src/realtime-update",
-  }
+  source_path = "src/realtime-update"
 
   environment_variables = {
     IOT_ENDPOINT = data.aws_iot_endpoint.current.endpoint_address
@@ -394,16 +402,4 @@ resource "aws_cognito_identity_pool_roles_attachment" "main" {
     "unauthenticated" = aws_iam_role.unauthenticated.arn
     "authenticated"   = aws_iam_role.authenticated.arn
   }
-}
-
-output "apigw_endpoint" {
-  value = module.api_gateway.apigatewayv2_api_api_endpoint
-}
-
-output "iotcore_endpoint" {
-  value = data.aws_iot_endpoint.current.endpoint_address
-}
-
-output "cognito_identity_pool_id" {
-  value = aws_cognito_identity_pool.main.id
 }
