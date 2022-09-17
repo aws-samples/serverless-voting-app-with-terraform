@@ -123,10 +123,6 @@ resource "aws_dynamodb_table" "votes_table" {
     type = "S"
   }
 
-  provisioner "local-exec" {
-    command = "cd scripts && bash load_init_data.sh"
-  }
-
   stream_enabled   = true
   stream_view_type = "NEW_IMAGE"
 
