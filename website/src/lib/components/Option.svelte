@@ -36,22 +36,22 @@
 				class="input input-bordered w-full"
 			/>
 			<div class="label">
-				<span class="label-text font-bold text-xl">IoT Core Endpoint</span>
-			</div>
-			<input
-				type="text"
-				name="iotcore"
-				bind:value={$options.iotcore_endpoint}
-				placeholder="Type here"
-				class="input input-bordered w-full"
-			/>
-			<div class="label">
 				<span class="label-text font-bold text-xl">Cognito Identity Pool ID</span>
 			</div>
 			<input
 				type="text"
 				name="iotcore"
 				bind:value={$options.cognito_identity_pool_id}
+				placeholder="Type here"
+				class="input input-bordered w-full"
+			/>
+			<div class="label">
+				<span class="label-text font-bold text-xl">IoT Core Endpoint</span>
+			</div>
+			<input
+				type="text"
+				name="iotcore"
+				bind:value={$options.iotcore_endpoint}
 				placeholder="Type here"
 				class="input input-bordered w-full"
 			/>

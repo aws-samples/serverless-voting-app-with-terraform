@@ -13,7 +13,7 @@ const ddbDocClient = DynamoDBDocument.from(client);
 module.exports.handler = async (event, context) => {
     console.log(JSON.stringify(event))
 
-    const vote = event.data
+    const vote = JSON.parse(event.body)
     const results = await ddbDocClient.update({
         TableName: DDB_TABLE_NAME,
         Key: {
@@ -26,5 +26,8 @@ module.exports.handler = async (event, context) => {
             ":value": 1,
         },
     })
-    return "vote saved"
+    return {
+        statusCode: 200,
+        body: JSON.stringify(results)
+    }
 }

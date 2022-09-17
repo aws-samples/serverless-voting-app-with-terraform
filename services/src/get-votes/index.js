@@ -13,5 +13,8 @@ const ddbDocClient = DynamoDBDocument.from(client);
 module.exports.handler = async (event, context) => {
     // read votes results from DynamoDB
     const results = await ddbDocClient.scan({ TableName: DDB_TABLE_NAME })
-    return JSON.stringify(results.Items)
+    return {
+        statusCode: 200,
+        body: JSON.stringify(results.Items)
+    }
 }
