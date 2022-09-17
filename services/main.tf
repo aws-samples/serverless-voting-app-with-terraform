@@ -1,53 +1,37 @@
+provider "aws" {
+  region = "us-west-2"
+}
+
 data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 data "aws_iot_endpoint" "current" {
   endpoint_type = "iot:Data-ATS"
 }
 
-module "voting-service" {
+module "get-votes" {
   source = "terraform-aws-modules/lambda/aws"
 
-  function_name   = "voting-service"
-  description     = "voting service"
-  handler         = "run.sh"
+  function_name   = "${var.app_name}-get-votes"
+  description     = "get votes"
+  handler         = "index.handler"
   runtime         = "nodejs14.x"
   memory_size     = 256
-  publish         = true
   build_in_docker = true
 
   source_path = {
-    path     = "src/voting-service",
-    patterns = []
+    path = "src/get-votes",
   }
 
   environment_variables = {
-    AWS_LAMBDA_EXEC_WRAPPER = "/opt/bootstrap"
-    READINESS_CHECK_PATH    = "/ready"
-    DDB_TABLE_NAME          = aws_dynamodb_table.votes_table.id
+    DDB_TABLE_NAME = aws_dynamodb_table.votes_table.id
   }
-
-  layers = [
-    "arn:aws:lambda:${data.aws_region.current.name}:753240598075:layer:LambdaAdapterLayerX86:3",
-  ]
-
-  tracing_mode          = "Active"
-  attach_tracing_policy = true
 
   attach_policy_statements = true
   policy_statements = {
     dynamodb = {
       effect = "Allow",
       actions = [
-        "dynamodb:GetItem",
-        "dynamodb:DeleteItem",
-        "dynamodb:PutItem",
         "dynamodb:Scan",
-        "dynamodb:Query",
-        "dynamodb:UpdateItem",
-        "dynamodb:BatchWriteItem",
-        "dynamodb:BatchGetItem",
-        "dynamodb:DescribeTable",
-        "dynamodb:ConditionCheckItem"
       ],
       resources = [aws_dynamodb_table.votes_table.arn]
     }
@@ -56,32 +40,52 @@ module "voting-service" {
   tags = {
     Terraform   = "true"
     Environment = "dev"
+    Application = var.app_name
   }
-
 }
 
-module "alias_live" {
-  source = "terraform-aws-modules/lambda/aws//modules/alias"
+module "post-votes" {
+  source = "terraform-aws-modules/lambda/aws"
 
-  refresh_alias = false
+  function_name   = "${var.app_name}-post-votes"
+  description     = "post votes"
+  handler         = "index.handler"
+  runtime         = "nodejs14.x"
+  memory_size     = 256
+  build_in_docker = true
 
-  name = "live"
+  source_path = {
+    path = "src/post-votes",
+  }
 
-  function_name    = module.voting-service.lambda_function_name
-  function_version = module.voting-service.lambda_function_version
+  environment_variables = {
+    DDB_TABLE_NAME = aws_dynamodb_table.votes_table.id
+  }
 
-  allowed_triggers = {
-    APIGatewayAny = {
-      service    = "apigateway"
-      source_arn = "${module.api_gateway.apigatewayv2_api_execution_arn}/*/*"
+  attach_policy_statements = true
+  policy_statements = {
+    dynamodb = {
+      effect = "Allow",
+      actions = [
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:ConditionCheckItem",
+      ],
+      resources = [aws_dynamodb_table.votes_table.arn]
     }
+  }
+
+  tags = {
+    Terraform   = "true"
+    Environment = "dev"
+    Application = var.app_name
   }
 }
 
 module "api_gateway" {
   source = "terraform-aws-modules/apigateway-v2/aws"
 
-  name          = "voting-api"
+  name          = "${var.app_name}-api"
   description   = "voting api"
   protocol_type = "HTTP"
 
@@ -95,20 +99,37 @@ module "api_gateway" {
 
   # Routes and integrations
   integrations = {
-    "$default" = {
-      lambda_arn = module.alias_live.lambda_alias_arn
+    "GET /votes" = {
+      lambda_arn = module.get-votes.lambda_function_arn
     }
+
+    "POST /votes" = {
+      lambda_arn = module.post-votes.lambda_function_arn
+    }
+
+    # "POST /votes" = {
+    #   description         = "integrate with Vote SQS queue"
+    #   integration_type    = "AWS_PROXY"
+    #   integration_subtype = "SQS-SendMessage"
+    #   credentials_arn     = aws_iam_role.example.arn
+
+    #   request_parameters = {
+    #     "QueueUrl"    = module.votes_queue.sqs_queue_id
+    #     "MessageBody" = "$request.body.message"
+    #   }
+    # }
   }
 
   tags = {
     Terraform   = "true"
     Environment = "dev"
+    Application = var.app_name
   }
 
 }
 
 resource "aws_dynamodb_table" "votes_table" {
-  name         = "vote-result"
+  name         = "${var.app_name}-vote-result"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "PK"
   range_key    = "SK"
@@ -129,13 +150,87 @@ resource "aws_dynamodb_table" "votes_table" {
   tags = {
     Terraform   = "true"
     Environment = "dev"
+    Application = var.app_name
   }
 }
 
-module "update-service" {
+module "votes_queue" {
+  source = "terraform-aws-modules/sqs/aws"
+
+  name = "${var.app_name}-votes-queue"
+
+  tags = {
+    Service     = "user"
+    Environment = "dev"
+  }
+}
+
+module "count-votes" {
   source = "terraform-aws-modules/lambda/aws"
 
-  function_name   = "update-service"
+  function_name   = "${var.app_name}-count-votes"
+  description     = "batch couting function"
+  handler         = "index.handler"
+  runtime         = "nodejs14.x"
+  memory_size     = 256
+  publish         = true
+  build_in_docker = true
+
+  source_path = {
+    path     = "src/count-votes",
+  }
+
+  environment_variables = {
+    QUEUE_URL = module.votes_queue.sqs_queue_id
+  }
+
+  event_source_mapping = {
+    sqs = {
+      event_source_arn = module.votes_queue.sqs_queue_arn
+    }
+  }
+
+  allowed_triggers = {
+    sqs = {
+      principal  = "sqs.amazonaws.com"
+      source_arn = module.votes_queue.sqs_queue_arn
+    }
+  }
+
+  tracing_mode          = "Active"
+  attach_tracing_policy = true
+
+  attach_policies    = true
+  number_of_policies = 1
+
+  policies = [
+    "arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole",
+  ]
+
+  attach_policy_statements = true
+  policy_statements = {
+    dynamodb = {
+      effect = "Allow",
+      actions = [
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:ConditionCheckItem"
+      ],
+      resources = [aws_dynamodb_table.votes_table.arn]
+    }
+  }
+
+  tags = {
+    Terraform   = "true"
+    Environment = "dev"
+    Application = var.app_name
+  }
+}
+
+module "realtime-update" {
+  source = "terraform-aws-modules/lambda/aws"
+
+  function_name   = "${var.app_name}-realtime-update"
   description     = "realtime update function"
   handler         = "index.handler"
   runtime         = "nodejs14.x"
@@ -144,8 +239,7 @@ module "update-service" {
   build_in_docker = true
 
   source_path = {
-    path     = "src/update-service",
-    patterns = []
+    path     = "src/realtime-update",
   }
 
   environment_variables = {
@@ -190,41 +284,43 @@ module "update-service" {
   tags = {
     Terraform   = "true"
     Environment = "dev"
+    Application = var.app_name
   }
 
 }
 
 resource "aws_cognito_identity_pool" "main" {
-  identity_pool_name               = "serverless_voting_app_pool"
+  identity_pool_name               = "${var.app_name}-identity_pool"
   allow_unauthenticated_identities = true
 
   tags = {
     Terraform   = "true"
     Environment = "dev"
+    Application = var.app_name
   }
 }
 
 resource "aws_iam_role" "unauthenticated" {
-  name = "cognito_serverless_voting_app_poolUnauth_role"
+  name = "${var.app_name}-cognito_poolUnauth_role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-        {
-          "Effect": "Allow",
-          "Principal": {
-              "Federated": "cognito-identity.amazonaws.com"
+      {
+        "Effect" : "Allow",
+        "Principal" : {
+          "Federated" : "cognito-identity.amazonaws.com"
+        },
+        "Action" : "sts:AssumeRoleWithWebIdentity",
+        "Condition" : {
+          "StringEquals" : {
+            "cognito-identity.amazonaws.com:aud" : "${aws_cognito_identity_pool.main.id}"
           },
-          "Action": "sts:AssumeRoleWithWebIdentity",
-          "Condition": {
-              "StringEquals": {
-                  "cognito-identity.amazonaws.com:aud": "${aws_cognito_identity_pool.main.id}"
-              },
-              "ForAnyValue:StringLike": {
-                  "cognito-identity.amazonaws.com:amr": "unauthenticated"
-              }
+          "ForAnyValue:StringLike" : {
+            "cognito-identity.amazonaws.com:amr" : "unauthenticated"
           }
         }
+      }
     ]
   })
 
@@ -256,36 +352,38 @@ resource "aws_iam_role" "unauthenticated" {
   tags = {
     Terraform   = "true"
     Environment = "dev"
+    Application = var.app_name
   }
 }
 
 resource "aws_iam_role" "authenticated" {
-  name = "cognito_serverless_voting_app_poolAuth_role"
+  name = "${var.app_name}-cognito_poolAuth_role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-        {
-          "Effect": "Allow",
-          "Principal": {
-              "Federated": "cognito-identity.amazonaws.com"
+      {
+        "Effect" : "Allow",
+        "Principal" : {
+          "Federated" : "cognito-identity.amazonaws.com"
+        },
+        "Action" : "sts:AssumeRoleWithWebIdentity",
+        "Condition" : {
+          "StringEquals" : {
+            "cognito-identity.amazonaws.com:aud" : "${aws_cognito_identity_pool.main.id}"
           },
-          "Action": "sts:AssumeRoleWithWebIdentity",
-          "Condition": {
-              "StringEquals": {
-                  "cognito-identity.amazonaws.com:aud": "${aws_cognito_identity_pool.main.id}"
-              },
-              "ForAnyValue:StringLike": {
-                  "cognito-identity.amazonaws.com:amr": "authenticated"
-              }
+          "ForAnyValue:StringLike" : {
+            "cognito-identity.amazonaws.com:amr" : "authenticated"
           }
         }
+      }
     ]
   })
 
   tags = {
     Terraform   = "true"
     Environment = "dev"
+    Application = var.app_name
   }
 }
 
@@ -294,7 +392,7 @@ resource "aws_cognito_identity_pool_roles_attachment" "main" {
 
   roles = {
     "unauthenticated" = aws_iam_role.unauthenticated.arn
-    "authenticated" = aws_iam_role.authenticated.arn
+    "authenticated"   = aws_iam_role.authenticated.arn
   }
 }
 

@@ -9,8 +9,6 @@ const votes_topic = "votes"
 
 
 module.exports.handler = async (event, context) => {
-    console.log(JSON.stringify(event))
-
     const data = event.Records.map(record => {
         return {
             id: record.dynamodb.Keys.PK.S,
@@ -22,6 +20,4 @@ module.exports.handler = async (event, context) => {
         topic: votes_topic,
         payload: JSON.stringify(data)
     })
-
-    console.log(JSON.stringify(res))
 }
