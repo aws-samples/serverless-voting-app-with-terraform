@@ -5,10 +5,16 @@ import { getIoTClient } from '$lib/aws-iot/client';
 
 let iot_client;
 
+const petConfigs = {
+	dog: { img_url: 'images/dog.jpg', order: 1 },
+	cat: { img_url: 'images/cat.jpg', order: 2 },
+	bird: { img_url: 'images/bird.jpg', order: 3 }
+};
+
 export const pets = writable([
-	{ id: 'dog', votes: 0, img_url: 'images/dog.jpg', order: 1 },
-	{ id: 'cat', votes: 0, img_url: 'images/cat.jpg', order: 2 },
-	{ id: 'bird', votes: 0, img_url: 'images/bird.jpg', order: 3 }
+	{ id: 'dog', votes: 0, ...petConfigs['dog'] },
+	{ id: 'cat', votes: 0, ...petConfigs['cat'] },
+	{ id: 'bird', votes: 0, ...petConfigs['bird'] }
 ]);
 
 export const options = writable((browser && JSON.parse(localStorage.getItem('options'))) || {});
@@ -42,9 +48,11 @@ export async function load_data() {
 		console.log(res);
 		if (res.ok) {
 			const data = await res.json();
-			const votes = data.map((vote) => {
-				return { id: vote.PK, votes: vote.votes, img_url: vote.img_url };
-			});
+			const votes = data
+				.map((vote) => {
+					return { id: vote.PK, votes: vote.votes, ...petConfigs[vote.PK] };
+				})
+				.sort((a, b) => a.order - b.order);
 			console.log(`votes=${JSON.stringify(votes)}`);
 			pets.set(votes);
 		} else {
@@ -100,7 +108,7 @@ export async function save_vote(vote) {
 	const options = JSON.parse(localStorage.getItem('options'));
 
 	if (options && options.apigw_endpoint) {
-		console.log(`send vote to voting-api: ${JSON.stringify(vote)}`);
+		console.log(`send vote to voting-api: ${vote.id}`);
 
 		const res = await fetch(`${options.apigw_endpoint}/votes`, {
 			method: 'POST',

@@ -38,7 +38,7 @@ app.get('/ready', (req, res) => {
 // GET /votes route - get voting results.
 app.get('/votes', async (req, res) => {
     const results = await ddbDocClient.scan({ TableName: DDB_TABLE_NAME })
-    const data = results.Items.sort((a, b)=> a.order - b.order)
+    const data = results.Items
     res.send(data)
 })
 
