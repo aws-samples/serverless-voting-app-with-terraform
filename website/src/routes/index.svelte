@@ -17,7 +17,7 @@
 	<div class="flex-1">
 		<div class="normal-case text-sm md:text-4xl font-bold">What is your favorite pet?</div>
 	</div>
-	<p class="px-2 text-sm md:text-xl font-bold">Total votes: {total_votes}</p>
+	<p class="px-2 text-sm md:text-xl font-bold">Total votes: {new Intl.NumberFormat().format(total_votes)}</p>
 	<Option />
 </div>
 
