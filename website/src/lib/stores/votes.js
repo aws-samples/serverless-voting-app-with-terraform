@@ -132,7 +132,7 @@ export async function save_vote(vote) {
 			},
 			body: JSON.stringify({ id: vote.id })
 		});
-		const data = await res.json();
+		const data = await res.text();
 		return data;
 	}
 

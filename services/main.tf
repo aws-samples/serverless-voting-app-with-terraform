@@ -234,13 +234,14 @@ module "count-votes" {
 
   environment_variables = {
     QUEUE_URL = module.votes_queue.sqs_queue_id
+    DDB_TABLE_NAME = aws_dynamodb_table.votes_table.id
   }
 
   event_source_mapping = {
     sqs = {
       event_source_arn                   = module.votes_queue.sqs_queue_arn
       batch_size                         = 1000
-      maximum_batching_window_in_seconds = 300
+      maximum_batching_window_in_seconds = 60
     }
   }
 
