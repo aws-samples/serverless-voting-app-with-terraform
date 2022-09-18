@@ -26,8 +26,5 @@ module.exports.handler = async (event, context) => {
             ":value": 1,
         },
     })
-    return {
-        statusCode: 200,
-        body: JSON.stringify(results)
-    }
+    return JSON.stringify(results)
 }

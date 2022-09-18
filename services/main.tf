@@ -113,23 +113,25 @@ module "api_gateway" {
   integrations = {
     "GET /votes" = {
       lambda_arn = module.get-votes.lambda_function_arn
-    }
-
-    "POST /votes" = {
-      lambda_arn = module.post-votes.lambda_function_arn
+      payload_format_version = "2.0"
     }
 
     # "POST /votes" = {
-    #   description         = "integrate with Vote SQS queue"
-    #   integration_type    = "AWS_PROXY"
-    #   integration_subtype = "SQS-SendMessage"
-    #   credentials_arn     = aws_iam_role.example.arn
-
-    #   request_parameters = {
-    #     "QueueUrl"    = module.votes_queue.sqs_queue_id
-    #     "MessageBody" = "$request.body.message"
-    #   }
+    #   lambda_arn = module.post-votes.lambda_function_arn
+    #   payload_format_version = "2.0"
     # }
+
+    "POST /votes" = {
+      description         = "integrate with Vote SQS queue"
+      integration_type    = "AWS_PROXY"
+      integration_subtype = "SQS-SendMessage"
+      credentials_arn     = aws_iam_role.apigw_sqs_role.arn
+
+      request_parameters = jsonencode({
+        "QueueUrl"    = module.votes_queue.sqs_queue_id
+        "MessageBody" = "$request.body"
+      })
+    }
   }
 
   tags = {
@@ -138,6 +140,47 @@ module "api_gateway" {
     Application = var.app_name
   }
 
+}
+
+resource "aws_iam_role" "apigw_sqs_role" {
+  name = "${var.app_name}-apigw_sqs_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "apigateway.amazonaws.com"
+        }
+      },
+    ]
+  })
+
+  inline_policy {
+    name = "sqs_integrtion_policy"
+
+    policy = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Action = [
+            "sqs:SendMessage",
+            "sqs:SendMessageBatch"
+          ]
+          Effect   = "Allow"
+          Resource = module.votes_queue.sqs_queue_arn
+        },
+      ]
+    })
+  }
+
+  tags = {
+    Terraform   = "true"
+    Environment = "dev"
+    Application = var.app_name
+  }
 }
 
 resource "aws_dynamodb_table" "votes_table" {
@@ -185,7 +228,6 @@ module "count-votes" {
   handler         = "index.handler"
   runtime         = "nodejs14.x"
   memory_size     = 256
-  publish         = true
   build_in_docker = true
 
   source_path = "src/count-votes"
@@ -196,7 +238,9 @@ module "count-votes" {
 
   event_source_mapping = {
     sqs = {
-      event_source_arn = module.votes_queue.sqs_queue_arn
+      event_source_arn                   = module.votes_queue.sqs_queue_arn
+      batch_size                         = 1000
+      maximum_batching_window_in_seconds = 300
     }
   }
 
@@ -206,6 +250,8 @@ module "count-votes" {
       source_arn = module.votes_queue.sqs_queue_arn
     }
   }
+
+  create_current_version_allowed_triggers = false
 
   tracing_mode          = "Active"
   attach_tracing_policy = true
@@ -245,7 +291,6 @@ module "realtime-update" {
   handler         = "index.handler"
   runtime         = "nodejs14.x"
   memory_size     = 256
-  publish         = true
   build_in_docker = true
 
   source_path = "src/realtime-update"
@@ -267,6 +312,8 @@ module "realtime-update" {
       source_arn = aws_dynamodb_table.votes_table.stream_arn
     }
   }
+
+  create_current_version_allowed_triggers = false
 
   tracing_mode          = "Active"
   attach_tracing_policy = true
