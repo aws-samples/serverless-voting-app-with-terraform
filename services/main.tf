@@ -157,7 +157,7 @@ resource "aws_dynamodb_table" "votes_table" {
   }
 
   stream_enabled   = true
-  stream_view_type = "NEW_IMAGE"
+  stream_view_type = "NEW_AND_OLD_IMAGES"
 
   tags = {
     Terraform   = "true"
