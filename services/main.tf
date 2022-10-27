@@ -130,7 +130,7 @@ module "api_gateway" {
 
   create_api_domain_name = false
 
-  # Routes and integrations
+  # Routes and integrations. Uncomment below for Module 2.
   integrations = {
     # "GET /votes" = {
     #   lambda_arn = module.get-votes.lambda_function_arn
