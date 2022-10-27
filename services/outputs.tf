@@ -2,9 +2,9 @@
 # Module 2 - Backend APIs
 # ---------------------------------------------------------
 
-# output "apigw_endpoint" {
-#   value = module.api_gateway.apigatewayv2_api_api_endpoint
-# }
+output "apigw_endpoint" {
+  value = module.api_gateway.apigatewayv2_api_api_endpoint
+}
 
 # ---------------------------------------------------------
 # Module 4 - Realtime Updates
