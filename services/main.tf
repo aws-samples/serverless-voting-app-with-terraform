@@ -133,12 +133,12 @@ module "api_gateway" {
   # Routes and integrations.
   integrations = {
     "GET /votes" = {
-      lambda_arn = module.get-votes.lambda_function_arn
+      lambda_arn             = module.get-votes.lambda_function_arn
       payload_format_version = "2.0"
     }
 
     "POST /votes" = {
-      lambda_arn = module.post-votes.lambda_function_arn
+      lambda_arn             = module.post-votes.lambda_function_arn
       payload_format_version = "2.0"
     }
   }
