@@ -1,4 +1,4 @@
-# Built a Serverless Voting Application with Terraform 
+# Building serverless applications with Terraform
 
 This is an demo application built for Builder Session [SVS208](https://portal.awsevents.com/events/reinvent2022/sessions/svs208) in re:Invent 2022. 
 
