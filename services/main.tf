@@ -35,7 +35,7 @@ module "get-votes" {
   function_name   = "${var.app_name}-get-votes"
   description     = "get votes"
   handler         = "index.handler"
-  runtime         = "nodejs16.x"
+  runtime         = "nodejs18.x"
   memory_size     = 256
   build_in_docker = true
 
@@ -77,7 +77,7 @@ module "post-votes" {
   function_name   = "${var.app_name}-post-votes"
   description     = "post votes"
   handler         = "index.handler"
-  runtime         = "nodejs16.x"
+  runtime         = "nodejs18.x"
   memory_size     = 256
   build_in_docker = true
 
