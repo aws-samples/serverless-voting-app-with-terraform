@@ -60,7 +60,7 @@ module "get-votes" {
   allowed_triggers = {
     APIGatewayAny = {
       service    = "apigateway"
-      source_arn = "${module.api_gateway.apigatewayv2_api_execution_arn}/*/*"
+      source_arn = "${module.api_gateway.api_execution_arn}/*/*"
     }
   }
 
@@ -104,7 +104,7 @@ module "post-votes" {
   allowed_triggers = {
     APIGatewayAny = {
       service    = "apigateway"
-      source_arn = "${module.api_gateway.apigatewayv2_api_execution_arn}/*/*"
+      source_arn = "${module.api_gateway.api_execution_arn}/*/*"
     }
   }
 
@@ -128,20 +128,31 @@ module "api_gateway" {
     allow_origins = ["*"]
   }
 
-  create_api_domain_name = false
+  create_domain_name = false
+  create_stage = true
+  stage_name = "$default"
 
   # Routes and integrations.
-  integrations = {
+  routes = {
     "GET /votes" = {
-      lambda_arn             = module.get-votes.lambda_function_arn
-      payload_format_version = "2.0"
-    }
+      integration = {
+        uri    = module.get-votes.lambda_function_arn
+        type   = "AWS_PROXY"
+        method = "POST"
 
-    "POST /votes" = {
-      lambda_arn             = module.post-votes.lambda_function_arn
-      payload_format_version = "2.0"
+        payload_format_version = "2.0"
+      }
     }
-  }
+    "POST /votes" = {
+      integration = {
+        uri    = module.post-votes.lambda_function_invoke_arn
+        type   = "AWS_PROXY"
+        method = "POST"
+
+        payload_format_version = "2.0"
+      }
+    }
+}
 
   tags = {
     Terraform   = "true"
