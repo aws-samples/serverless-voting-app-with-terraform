@@ -1,16 +1,17 @@
 <script>
 	import { onMount, beforeUpdate } from 'svelte';
-	import { Chart } from 'chart.js/auto/auto';
+	import { Chart } from 'chart.js/auto';
 
 	export let data;
 
-	let chartLabels = data.map((v) => v.id);
-	let chartValues = data.map((v) => v.votes);
+	$: chartLabels = data?.map((v) => v.id) || [];
+	$: chartValues = data?.map((v) => v.votes) || [];
 	let ctx;
 	let chartCanvas;
 	var chart;
 
 	onMount(async (promise) => {
+		if (!chartCanvas) return;
 		ctx = chartCanvas.getContext('2d');
 		chart = new Chart(ctx, {
 			type: 'bar',
@@ -44,7 +45,7 @@
 	});
 
 	beforeUpdate(async (promise) => {
-		if (!chart) return;
+		if (!chart || !data) return;
 
 		console.log('update chart data = ' + data.map((v) => v.votes));
 
@@ -58,4 +59,4 @@
 	});
 </script>
 
-<canvas bind:this={chartCanvas} />
+<canvas bind:this={chartCanvas}></canvas>

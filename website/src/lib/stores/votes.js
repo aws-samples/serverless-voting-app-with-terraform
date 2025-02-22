@@ -1,7 +1,6 @@
-import { browser } from '$app/env';
+import { browser } from '$app/environment';
 import { writable } from 'svelte/store';
 import * as AWSCognitoIdentity from '@aws-sdk/client-cognito-identity';
-import { getIoTClient } from '$lib/aws-iot/client';
 
 let iot_client;
 
@@ -22,6 +21,7 @@ export const pets = writable(defaultPets);
 export const options = writable((browser && JSON.parse(localStorage.getItem('options'))) || {});
 
 if (browser) {
+	const { getIoTClient } = await import('$lib/aws-iot/client');
 	options.subscribe((value) => {
 		console.log('Options updated. Saving to browser local storage.');
 		localStorage.options = JSON.stringify(value);
@@ -77,6 +77,7 @@ export async function load_data() {
 
 	// setup iot client to receive realtime updates
 	if (options && options.cognito_identity_pool_id && options.iotcore_endpoint) {
+		const { getIoTClient } = await import('$lib/aws-iot/client');
 		const aws_region = options.cognito_identity_pool_id.split(':')[0];
 		const creds = await getCredentions(options.cognito_identity_pool_id);
 
