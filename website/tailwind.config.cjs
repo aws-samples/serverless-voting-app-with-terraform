@@ -1,5 +1,8 @@
-const config = {
-	content: ['./src/**/*.{html,js,svelte,ts}'],
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+	content: [
+		'./src/**/*.{html,js,svelte,ts}'
+	],
 
 	theme: {
 		container: {
@@ -16,9 +19,11 @@ const config = {
 	},
 
 	plugins: [
-		require("@tailwindcss/typography"),
-		require('daisyui'),
-	]
-};
+		require('@tailwindcss/typography'),
+		require('daisyui')
+	],
 
-module.exports = config;
+	daisyui: {
+		themes: ["light"]
+	}
+};

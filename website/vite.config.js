@@ -3,7 +3,7 @@ import { sveltekit } from '@sveltejs/kit/vite';
 /** @type {import('vite').UserConfig} */
 const config = {
 	resolve: { 
-		alias: { mqtt: 'mqtt/dist/mqtt.min' }, 
+		alias: { mqtt: 'mqtt/dist/mqtt.esm' }, 
 	},
 	plugins: [
 		sveltekit()
